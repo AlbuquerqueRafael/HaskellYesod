@@ -1,32 +1,32 @@
-{-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, ScopedTypeVariables, DeriveAnyClass #-}
 module Handler.Submission where
 
 import Import
-import System.IO as T
-import Control.Applicative
-import Data.Aeson
-import Data.Text (Text)
 
-data Person = Person { name :: Text, age :: String } deriving Show
+data ResponseMessage = ResponseMessage { message :: String} deriving (Show, Generic)
 
--- We expect a JSON object, so we fail at any non-Object value.
-instance FromJSON Person where
-    parseJSON (Object v) = Person <$> v .: "name" <*> v .: "age"
+instance FromJSON ResponseMessage where
+    parseJSON (Object v) = ResponseMessage <$> v .: "message"
     parseJSON _ = empty
 
-instance ToJSON Person where
-    toJSON (Person name age) = object ["name" .= name, "age" .= age]
+instance ToJSON ResponseMessage where
+    toJSON (ResponseMessage message) = object ["message" .= message]
 
+rm_worked :: ResponseMessage
+rm_worked  = ResponseMessage { message = "File was successfully uploaded"}
+
+rm_error :: ResponseMessage
+rm_error = ResponseMessage { message = "Something wrong happened"}
 
 postSubmissionR :: Handler Value
 postSubmissionR = do
-    -- requireJsonBody will parse the request body into the appropriate type, or return a 400 status code if the request JSON is invalid.
-    -- (The ToJSON and FromJSON instances are derived in the config/models file).
-    comment <- (requireJsonBody :: Handler Person)
-    -- get the json body as Foo (assumes FromJSON instance)
-    let teste = age comment
-    liftIO $ T.writeFile "test.txt" teste
-    returnJson teste
+  listNumber <- runInputPost $ ireq textField "listNumber"
+  result <- runInputPost $ iopt fileField "studentSubmission"
 
-    -- The YesodAuth instance in Foundation.hs defines the UserId to be the type used for authentication.
+  case result of Just fileInfo -> do
+                    let mounthInitalPath = "resource/" <> listNumber <> "/"
+                    let destination = (unpack $ mounthInitalPath <> (fileName fileInfo) )
+                    liftIO $ fileMove fileInfo destination
+                    sendResponseStatus status200 $ toJSON rm_worked
+                 Nothing -> do
+                    sendResponseStatus status400 $ toJSON rm_error
