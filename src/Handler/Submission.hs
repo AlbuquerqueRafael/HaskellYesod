@@ -52,7 +52,7 @@ writeToFile fileContent listNumber = do
 
 initCommand :: String -> HandlerT App IO ()
 initCommand registration = do
-  let cmd = "ghci ./resource/lista7/GenerateFile.hs -e \"main \\\"" Prelude.++ registration Prelude.++ "\\\"\""
+  let cmd = "ghci ./resource/lista7/GenerateFile.hs -iresource/lista7 -e \"main \\\"" Prelude.++ registration Prelude.++ "\\\"\""
   result <- liftIO $ try' (callCommand cmd)
   case result of
     Left ex -> liftIO $ T.putStrLn "started ok"
