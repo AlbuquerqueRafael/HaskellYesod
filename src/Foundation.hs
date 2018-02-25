@@ -80,30 +80,6 @@ instance Yesod App where
         120    -- timeout in minutes
         "config/client_session_key.aes"
 
-    -- Yesod Middleware allows you to run code before and after each handler function.
-    -- The defaultYesodMiddleware adds the response header "Vary: Accept, Accept-Language" and performs authorization checks.
-    -- Some users may also want to add the defaultCsrfMiddleware, which:
-    --   a) Sets a cookie with a CSRF token in it.
-    --   b) Validates that incoming write requests include that token in either a header or POST parameter.
-    -- To add it, chain it together with the defaultMiddleware: yesodMiddleware = defaultYesodMiddleware . defaultCsrfMiddleware
-    -- For details, see the CSRF documentation in the Yesod.Core.Handler module of the yesod-core package.
-    yesodMiddleware = defaultYesodMiddleware
-
-    defaultLayout widget = do
-        master <- getYesod
-        mmsg <- getMessage
-
-        muser <- maybeAuthPair
-
-        -- We break up the default layout into two components:
-        -- default-layout is the contents of the body tag, and
-        -- default-layout-wrapper is the entire page. Since the final
-        -- value passed to hamletToRepHtml cannot be a widget, this allows
-        -- you to use normal widget features in default-layout.
-
-        pc <- widgetToPageContent "404"
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
-
     -- The page to be redirected to when authentication is required.
     authRoute _ = Just $ AuthR LoginR
 
@@ -111,7 +87,6 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized SubmissionR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
-    -- isAuthorized ProfileR _ = isAuthenticated
 
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.

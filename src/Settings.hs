@@ -137,12 +137,3 @@ compileTimeAppSettings =
 --
 -- > $(combineStylesheets 'StaticR [style1_css, style2_css])
 
-combineStylesheets :: Name -> [Route Static] -> Q Exp
-combineStylesheets = combineStylesheets'
-    (appSkipCombining compileTimeAppSettings)
-    combineSettings
-
-combineScripts :: Name -> [Route Static] -> Q Exp
-combineScripts = combineScripts'
-    (appSkipCombining compileTimeAppSettings)
-    combineSettings
