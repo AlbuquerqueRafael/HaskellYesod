@@ -32,7 +32,7 @@ main matricula = do
 generateResult :: String -> Counts -> IO ()
 generateResult matricula testsResult = do
   T.putStrLn "Write file in result directory json worked"
-  let fileName = "results/" ++ matricula ++ ".json"
+  let fileName = "./resource/lista7/results/" ++ matricula ++ ".json"
   let totalTestes = cases testsResult
   let passaram = tried testsResult - errors testsResult - failures testsResult
   let excecoes = errors testsResult
