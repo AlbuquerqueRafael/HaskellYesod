@@ -13,6 +13,7 @@ module MultisetMap (
     import qualified Data.Map as Map
 
     insert :: (Ord k) => k -> Map k Integer -> Map k Integer
+    insert element = Map.insertWith (+) element 1
 
     remove :: (Ord k) => k -> Map k Integer -> Map k Integer
     remove element m
