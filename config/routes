@@ -5,6 +5,4 @@
 
 / HomeR GET
 
-/profile ProfileR GET
-
 /submission SubmissionR POST

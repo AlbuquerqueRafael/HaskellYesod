@@ -60,9 +60,6 @@ data MenuTypes
 -- type Widget = WidgetT App IO ()
 mkYesodData "App" $(parseRoutesFile "config/routes")
 
--- | A convenient synonym for creating forms.
-type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
-
 -- | A convenient synonym for database access functions.
 type DB a = forall (m :: * -> *).
     (MonadIO m, Functor m) => ReaderT SqlBackend m a
@@ -114,7 +111,7 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized SubmissionR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
-    isAuthorized ProfileR _ = isAuthenticated
+    -- isAuthorized ProfileR _ = isAuthenticated
 
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.
@@ -147,30 +144,6 @@ instance YesodAuth App where
 
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
-
-    authenticate creds = runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> return $ Authenticated uid
-            Nothing -> Authenticated <$> insert User
-                { userIdent = credsIdent creds
-                , userPassword = Nothing
-                }
-
-    -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins app = [authOpenId Claimed []] ++ extraAuthPlugins
-        -- Enable authDummy login if enabled.
-        where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
-
-    authHttpManager = getHttpManager
-
--- | Access function to determine if a user is logged in.
-isAuthenticated :: Handler AuthResult
-isAuthenticated = do
-    muid <- maybeAuthId
-    return $ case muid of
-        Nothing -> Unauthorized "You must login to access this page"
-        Just _ -> Authorized
 
 instance YesodAuthPersist App
 
