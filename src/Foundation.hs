@@ -97,10 +97,6 @@ instance Yesod App where
         mmsg <- getMessage
 
         muser <- maybeAuthPair
-        mcurrentRoute <- getCurrentRoute
-
-        -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
-        (title, parents) <- breadcrumbs
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -117,30 +113,8 @@ instance Yesod App where
     -- Routes not requiring authentication.
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized SubmissionR _ = return Authorized
-    isAuthorized FaviconR _ = return Authorized
-    isAuthorized RobotsR _ = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
-
+    isAuthorized HomeR _ = return Authorized
     isAuthorized ProfileR _ = isAuthenticated
-
-    -- This function creates static content files in the static folder
-    -- and names them based on a hash of their content. This allows
-    -- expiration dates to be set far in the future without worry of
-    -- users receiving stale content.
-    addStaticContent ext mime content = do
-        master <- getYesod
-        let staticDir = appStaticDir $ appSettings master
-        addStaticContentExternal
-            minifym
-            genFileName
-            staticDir
-            (StaticR . flip StaticRoute [])
-            ext
-            mime
-            content
-      where
-        -- Generate a unique filename based on the content itself
-        genFileName lbs = "autogen-" ++ base64md5 lbs
 
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.
@@ -166,6 +140,10 @@ instance YesodPersistRunner App where
 
 instance YesodAuth App where
     type AuthId App = UserId
+
+    loginDest _ = HomeR
+
+    logoutDest _ = HomeR
 
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
