@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, ScopedTypeVariables, DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, ScopedTypeVariables #-}
 module Handler.Submission where
 
 import System.Process
@@ -7,7 +7,7 @@ import System.Directory
 import System.IO as T
 import Control.Exception
 
-data ResponseMessage = ResponseMessage { message :: String} deriving (Show, Generic)
+newtype ResponseMessage = ResponseMessage { message :: String } deriving (Show, Generic)
 
 instance FromJSON ResponseMessage where
     parseJSON (Object v) = ResponseMessage <$> v .: "message"
@@ -16,11 +16,11 @@ instance FromJSON ResponseMessage where
 instance ToJSON ResponseMessage where
     toJSON (ResponseMessage message) = object ["message" .= message]
 
-rm_worked :: ResponseMessage
-rm_worked  = ResponseMessage { message = "File was successfully uploaded"}
+rmWorked :: ResponseMessage
+rmWorked  = ResponseMessage { message = "File was successfully uploaded"}
 
-rm_error :: ResponseMessage
-rm_error = ResponseMessage { message = "Something wrong happened"}
+rmError :: ResponseMessage
+rmError = ResponseMessage { message = "Something wrong happened"}
 
 try' :: IO a ->  IO (Either IOException a)
 try' =  Control.Exception.try
@@ -32,13 +32,12 @@ postSubmissionR = do
 
   case result of Just fileInfo -> do
                     let mounthInitalPath = "resource/" <> listNumber <> "/students/"
-                    let destination = (unpack $ mounthInitalPath <> (fileName fileInfo) )
+                    let destination = unpack $ mounthInitalPath <> fileName fileInfo
                     liftIO $ fileMove fileInfo destination
                     initCorrection destination listNumber
                     initCommand "fsdfs"
-                    sendResponseStatus status200 $ toJSON rm_worked
-                 Nothing -> do
-                    sendResponseStatus status400 $ toJSON rm_error
+                    sendResponseStatus status200 $ toJSON rmWorked
+                 Nothing -> sendResponseStatus status400 $ toJSON rmError
 
 
 initCorrection :: FilePath -> Text -> HandlerT App IO ()
@@ -47,7 +46,7 @@ initCorrection filePath listNumber = do
   writeToFile fileContent listNumber
 
 writeToFile :: String -> Text -> HandlerT App IO ()
-writeToFile fileContent listNumber = do
+writeToFile fileContent listNumber =
   liftIO $ T.writeFile "resource/lista7/MultisetMap.hs" fileContent
 
 initCommand :: String -> HandlerT App IO ()
