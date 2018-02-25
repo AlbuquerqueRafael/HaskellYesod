@@ -89,7 +89,7 @@ instance FromJSON AppSettings where
         appCopyright              <- o .:  "copyright"
         appAnalytics              <- o .:? "analytics"
 
-        appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
+        -- appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
 
         return AppSettings {..}
 
@@ -136,4 +136,3 @@ compileTimeAppSettings =
 -- Sample usage (inside a Widget):
 --
 -- > $(combineStylesheets 'StaticR [style1_css, style2_css])
-

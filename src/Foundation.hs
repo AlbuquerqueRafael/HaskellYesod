@@ -74,20 +74,6 @@ instance Yesod App where
             Nothing -> getApprootText guessApproot app req
             Just root -> root
 
-    -- Store session data on the client in encrypted cookies,
-    -- default session idle timeout is 120 minutes
-    makeSessionBackend _ = Just <$> defaultClientSessionBackend
-        120    -- timeout in minutes
-        "config/client_session_key.aes"
-
-    -- The page to be redirected to when authentication is required.
-    authRoute _ = Just $ AuthR LoginR
-
-    -- Routes not requiring authentication.
-    isAuthorized (AuthR _) _ = return Authorized
-    isAuthorized SubmissionR _ = return Authorized
-    isAuthorized HomeR _ = return Authorized
-
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.
     shouldLog app _source level =
@@ -113,9 +99,9 @@ instance YesodPersistRunner App where
 instance YesodAuth App where
     type AuthId App = UserId
 
-    loginDest _ = HomeR
-
-    logoutDest _ = HomeR
+    -- loginDest _ = HomeR
+    --
+    -- logoutDest _ = HomeR
 
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
