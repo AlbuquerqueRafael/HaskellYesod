@@ -96,17 +96,17 @@ instance YesodPersist App where
 instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner appConnPool
 
-instance YesodAuth App where
-    type AuthId App = UserId
-
-    -- loginDest _ = HomeR
-    --
-    -- logoutDest _ = HomeR
-
-    -- Override the above two destinations when a Referer: header is present
-    redirectToReferer _ = True
-
-instance YesodAuthPersist App
+-- instance YesodAuth App where
+--     type AuthId App = UserId
+--
+--     -- loginDest _ = HomeR
+--     --
+--     -- logoutDest _ = HomeR
+--
+--     -- Override the above two destinations when a Referer: header is present
+--     redirectToReferer _ = True
+--
+-- instance YesodAuthPersist App
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.
