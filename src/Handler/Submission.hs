@@ -72,7 +72,5 @@ initCommand registration = do
                     let readJson = decode $ C.pack contents :: Maybe Submission
                     -- liftIO $ T.print readJson
                     case readJson of
-                        Just submission -> do
-                            liftIO $ T.print (insert submission :: ReaderT (BaseBackend App -> Key Submission))
-                            -- liftIO $ T.print subId
+                        Just submission -> liftIO $ T.print submission
                         _ -> liftIO $ T.print "Nao pegou"
