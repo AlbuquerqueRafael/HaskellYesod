@@ -25,10 +25,9 @@ import           Database.Persist.Sqlite
 import           Database.Persist.TH
 import Control.Monad.Trans.Reader as Reader
 import           Control.Monad.IO.Class  (liftIO)
-import Import
 
--- data Result = Result { studentId :: String, failed :: Int,
---                     passed :: Int, total :: Int, exceptions :: Int} deriving (Show, Generic, ToJSON, FromJSON)
+data Result = Submission { studentId :: String, failed :: Int,
+                    passed :: Int, total :: Int, exceptions :: Int, listName :: String} deriving (Show, Generic, ToJSON, FromJSON)
 
 
 main :: String -> IO ()
@@ -38,7 +37,7 @@ main studentId = do
 
 
 
-generateResult :: String -> Counts -> HandlerT App IO ()
+generateResult :: String -> Counts -> IO ()
 generateResult studentId testsResult = do
 
   let fileName = "./resource/lista7/results/" Prelude.++ studentId Prelude.++ ".json"
@@ -46,12 +45,8 @@ generateResult studentId testsResult = do
   let passed = tried testsResult - errors testsResult - failures testsResult
   let exceptions = errors testsResult
   let failed = failures testsResult
-  let output = jesus { studentId = studentId, failed = failed, passed = passed,
+  let output = Submission { studentId = studentId, failed = failed, passed = passed,
                           total = total,  exceptions = exceptions, listName = "lista7"}
 
-  outputId <- runDB $ insertEntity output
-  -- insert $ Result studentId failed passed total exceptions
-
-  -- resultId <- insert  output
-  -- I.writeFile fileName (encodeToLazyText output)
+  I.writeFile fileName (encodeToLazyText output)
   -- T.putStrLn "Write file in result directory json worked"
