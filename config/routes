@@ -2,3 +2,4 @@
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
 /submission SubmissionR POST
+/activities ActivitiesR GET
