@@ -61,7 +61,6 @@ writeToFile fileContent listNumber =
   liftIO $ T.writeFile ("resource/" Prelude.++ listNumber Prelude.++ "/MultisetMap.hs") fileContent
 
 initCommand :: String -> IO ()
--- initCommand :: String -> Maybe Submission
 initCommand registration = do
   let cmd = "ghci ./resource/lista7/GenerateFile.hs -iresource/lista7 -e \"main \\\"" Prelude.++ registration Prelude.++ "\\\"\""
   result <- liftIO $ try' (callCommand cmd)
@@ -70,7 +69,9 @@ initCommand registration = do
       Right () -> do
                     contents <- Prelude.readFile $ "./resource/lista7/results/" Prelude.++ registration Prelude.++ ".json"
                     let readJson = decode $ C.pack contents :: Maybe Submission
-                    -- liftIO $ T.print readJson
                     case readJson of
-                        Just submission -> liftIO $ T.print submission
+                        Just (Submission studentId failed passed total exceptions listName) -> do
+                            let subId = runDB $ insert (Submission studentId failed passed total exceptions listName) :: HandlerT App IO (Key Submission)
+                            -- let sub2 = runDB $ getBy $ SubKey studentId listName :: HandlerT App IO (Maybe (Entity Submission))
+                            liftIO $ T.print "Pegou"
                         _ -> liftIO $ T.print "Nao pegou"
