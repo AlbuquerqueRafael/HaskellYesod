@@ -14,6 +14,7 @@ import Import
 import System.Directory
 import System.IO as T
 import Control.Exception
+import Database.Persist.Sql  (SqlPersistM, runSqlPersistMPool, rawExecute, rawSql, unSingle, connEscapeName)
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Aeson (decode, fromJSON)
 
@@ -60,7 +61,6 @@ writeToFile :: String -> String -> HandlerT App IO ()
 writeToFile fileContent listNumber =
   liftIO $ T.writeFile ("resource/" Prelude.++ listNumber Prelude.++ "/MultisetMap.hs") fileContent
 
-initCommand :: String -> IO ()
 initCommand registration = do
   let cmd = "ghci ./resource/lista7/GenerateFile.hs -iresource/lista7 -e \"main \\\"" Prelude.++ registration Prelude.++ "\\\"\""
   result <- liftIO $ try' (callCommand cmd)
@@ -73,5 +73,16 @@ initCommand registration = do
                         Just (Submission studentId failed passed total exceptions listName) -> do
                             let subId = runDB $ insert (Submission studentId failed passed total exceptions listName) :: HandlerT App IO (Key Submission)
                             -- let sub2 = runDB $ getBy $ SubKey studentId listName :: HandlerT App IO (Maybe (Entity Submission))
-                            liftIO $ T.print "Pegou"
+                            subId
+                            liftIO $ T.print exceptions
+                            liftIO $ T.print failed
+                            liftIO $ T.print passed
+                            liftIO $ T.print total
+                            liftIO $ T.print exceptions
+
                         _ -> liftIO $ T.print "Nao pegou"
+
+getSubmissionR :: Import.Handler Value
+getSubmissionR = do
+  ms <- runDB $ selectList [] [] :: Import.Handler [Entity Submission]
+  return $ object ["municipalities" .= ms]

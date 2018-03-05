@@ -8,6 +8,5 @@ Submission json
     total Int
     exceptions Int
     listName Text
-    SubKey studentId listName
     deriving Eq
     deriving Show
