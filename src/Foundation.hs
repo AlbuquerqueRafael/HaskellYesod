@@ -23,7 +23,7 @@ import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
-
+import Model ()
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
@@ -96,17 +96,17 @@ instance YesodPersist App where
 instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner appConnPool
 
-instance YesodAuth App where
-    type AuthId App = UserId
-
-    -- loginDest _ = HomeR
-    --
-    -- logoutDest _ = HomeR
-
-    -- Override the above two destinations when a Referer: header is present
-    redirectToReferer _ = True
-
-instance YesodAuthPersist App
+-- instance YesodAuth App where
+--     type AuthId App = UserId
+--
+--     -- loginDest _ = HomeR
+--     --
+--     -- logoutDest _ = HomeR
+--
+--     -- Override the above two destinations when a Referer: header is present
+--     redirectToReferer _ = True
+--
+-- instance YesodAuthPersist App
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.

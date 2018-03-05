@@ -20,7 +20,7 @@ dependencies:
 - bytestring >=0.9 && <0.11
 - text >=0.11 && <2.0
 - persistent >=2.0 && <2.8
-- persistent-sqlite >=2.6.2 && <2.8
+- persistent-postgresql >=2.1.1 && <2.8
 - persistent-template >=2.0 && <2.8
 - template-haskell
 - shakespeare >=2.0 && <2.1
@@ -50,8 +50,8 @@ dependencies:
 - foreign-store
 - xlsx
 - lens
+- time
 - utf8-string
-
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
 library:
