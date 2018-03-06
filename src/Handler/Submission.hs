@@ -90,5 +90,7 @@ initCommand registration = do
 
 getSubmissionR :: Import.Handler Value
 getSubmissionR = do
-  ms <- runDB $ selectList [] [] :: Import.Handler [Entity Submission]
-  return $ object ["submissions" .= ms]
+  listName <- runInputGet $ ireq textField "listName"
+  studentId <- runInputGet $ ireq textField "studentId"
+  ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName ==. listName] [] :: Import.Handler [Entity Submission]
+  return $ object ["submission" .= ms]
