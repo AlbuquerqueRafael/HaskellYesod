@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, TemplateHaskell, DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, TemplateHaskell, DeriveAnyClass, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Handler.ReadSheet where 
 
@@ -9,23 +9,10 @@ import Network.Google
 
 import Control.Lens           ((.~), (<&>), (^.))
 import Data.Text              (Text, pack, unpack)
-import System.IO              (stdout)
+import System.IO as T
 import Data.Aeson.Types
 import Import
-
-data Activity = Activity { 
-    idActivity :: String,
-    nome :: String,
-    descricao :: String,
-    dataHoraLiberacao :: String,
-    dataHoraLimiteEnvioNormal :: String,
-    dataHoraLimiteEnvioAtraso :: String,
-    monitores :: [String],
-    corretor :: String,
-    dataInicioCorrecao :: String,
-    dataEntregaCorrecao :: String,
-    linksVideoAulas :: [String]
-} deriving (Show, Generic, ToJSON)
+import Database.Persist.Sql  (SqlPersistM, runSqlPersistMPool, rawExecute, rawSql, unSingle, connEscapeName, unSqlBackendKey, toSqlKey)
 
 sheetId :: String
 sheetId = "1s7DYZ2EmIL8gXIABRighKC8PHEjckMY1YONrN9eW-Pc"
@@ -63,19 +50,18 @@ exampleGetValue sheetID range = do
     send  (spreadsheetsValuesGet sheetID range )
 
 parseToActivity :: [Value] -> Activity
-parseToActivity list = Activity {
-    idActivity = removeValue (list !! 0), -- Pega o elemento do índice 0
-    nome = removeValue (list !! 1), -- Pega o elemento do índice 1
-    descricao = removeValue (list !! 2), -- Pega o elemento do índice 2
-    dataHoraLiberacao = removeValue (list !! 3), -- Pega o elemento do índice 3
-    dataHoraLimiteEnvioNormal = removeValue (list !! 4), -- Pega o elemento do índice 4
-    dataHoraLimiteEnvioAtraso = removeValue (list !! 5), -- Pega o elemento do índice 5
-    monitores = [removeValue (list !! 6)], -- Pega o elemento do índice 6
-    corretor = removeValue (list !! 7), -- Pega o elemento do índice 7
-    dataInicioCorrecao = removeValue (list !! 8), -- Pega o elemento do índice 8
-    dataEntregaCorrecao = removeValue (list !! 9), -- Pega o elemento do índice 9
-    linksVideoAulas = if Prelude.length list > 10 then [removeValue (list !! 10)] else [""] -- Pega o elemento do índice 10
-}
+parseToActivity list = Activity 
+    (removeValue (list !! 0)) 
+    (removeValue (list !! 1))
+    (removeValue (list !! 2))
+    (removeValue (list !! 3))
+    (removeValue (list !! 4))
+    (removeValue (list !! 5))
+    ([removeValue (list !! 6)])
+    (removeValue (list !! 7))
+    (removeValue (list !! 8))
+    (removeValue (list !! 9))
+    (if Prelude.length list > 10 then [removeValue (list !! 10)] else [""])
 
 parseAllElements :: [[Value]] -> [Activity]
 parseAllElements [] = []
@@ -84,8 +70,20 @@ parseAllElements (x:xs) = [parseToActivity x] Prelude.++ parseAllElements xs
 removeValue :: Value -> String
 removeValue (String a) = Data.Text.unpack(a)
 
+saveActivity :: Activity -> HandlerT App IO (Key Activity)
+saveActivity activity = do
+    runDB $ insert $ activity
+
+saveAllActivities :: [Activity] -> HandlerT App IO ()
+saveAllActivities [] = return ()
+saveAllActivities (x:xs) = do
+    saveActivity x
+    saveAllActivities xs
+
 getActivitiesR :: Import.Handler Value
 getActivitiesR = do
     valueR <- liftIO $ exampleGetValue (Data.Text.pack(sheetId)) (Data.Text.pack(rangeSheet))
     let activities = parseAllElements (Prelude.tail (valueR^.vrValues))
-    returnJson $ activities
+    saveAllActivities activities
+    ms <- runDB $ selectList [] [] :: Import.Handler [Entity Activity]
+    returnJson $ ms

@@ -11,3 +11,18 @@ Submission json
     SubKey studentId listName
     deriving Eq
     deriving Show
+
+Activity json
+    activityId String
+    nome String
+    descricao String
+    dataHoraLiberacao String
+    dataHoraLimiteEnvioNormal String
+    dataHoraLimiteEnvioAtraso String
+    monitores [String]
+    corretor String
+    dataInicioCorrecao String
+    dataEntregaCorrecao String
+    linksVideoAulas [String]
+    deriving Eq
+    deriving Show
