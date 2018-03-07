@@ -2,7 +2,6 @@
 
 module Handler.ReadSheet where 
 
----------------------------------------------------------------------------------
 import Network.Google.Resource.Sheets.Spreadsheets.Get
 import Network.Google.Sheets
 import Network.Google
@@ -19,6 +18,21 @@ sheetId = "1s7DYZ2EmIL8gXIABRighKC8PHEjckMY1YONrN9eW-Pc"
 
 rangeSheet :: String
 rangeSheet = "Sheet1!A:K"
+
+newtype ResponseMessage = ResponseMessage { message :: String } deriving (Show, Generic)
+
+instance FromJSON ResponseMessage where
+    parseJSON (Import.Object v) = ResponseMessage <$> v .: "message"
+    parseJSON _ = empty
+
+instance ToJSON ResponseMessage where
+    toJSON (ResponseMessage message) = object ["message" .= message]
+
+rmWorked :: ResponseMessage
+rmWorked  = ResponseMessage { message = "Spreadsheet values updated successfully" }
+
+rmError :: ResponseMessage
+rmError = ResponseMessage { message = "Something wrong happened. Spreadsheet not updated." }
 
 ---------------------------------------------------------------------------------
 -- | 
@@ -82,8 +96,19 @@ saveAllActivities (x:xs) = do
 
 getActivitiesR :: Import.Handler Value
 getActivitiesR = do
+    ms <- runDB $ selectList [] [] :: Import.Handler [Entity Activity]
+    returnJson $ ms
+
+getActivityR :: Import.Handler Value
+getActivityR = do
+    activityId <- runInputGet $ ireq textField "activityId"
+    ms <- runDB $ selectList [ActivityActivityId ==. Data.Text.unpack(activityId)] [] :: Import.Handler [Entity Activity]
+    returnJson $ ms
+
+getUpdateActivitiesR :: Import.Handler Value
+getUpdateActivitiesR = do
+    runDB $ deleteWhere ([] :: [Filter Activity])
     valueR <- liftIO $ exampleGetValue (Data.Text.pack(sheetId)) (Data.Text.pack(rangeSheet))
     let activities = parseAllElements (Prelude.tail (valueR^.vrValues))
     saveAllActivities activities
-    ms <- runDB $ selectList [] [] :: Import.Handler [Entity Activity]
-    returnJson $ ms
+    returnJson (toJSON rmWorked)

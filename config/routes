@@ -3,3 +3,5 @@
 
 /submission SubmissionR GET POST
 /activities ActivitiesR GET
+/updateActivities UpdateActivitiesR GET
+/activity ActivityR GET
