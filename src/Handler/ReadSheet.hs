@@ -11,6 +11,7 @@ import Data.Text              (Text, pack, unpack)
 import System.IO as T
 import Data.Aeson.Types
 import Import
+import Handler.ExcelDate
 import Database.Persist.Sql  (SqlPersistM, runSqlPersistMPool, rawExecute, rawSql, unSingle, connEscapeName, unSqlBackendKey, toSqlKey)
 
 sheetId :: String
@@ -68,13 +69,13 @@ parseToActivity list = Activity
     (removeValue (list !! 0)) 
     (removeValue (list !! 1))
     (removeValue (list !! 2))
-    (removeValue (list !! 3))
-    (removeValue (list !! 4))
-    (removeValue (list !! 5))
+    (stringToDate (removeValue (list !! 3)))
+    (stringToDate (removeValue (list !! 4)))
+    (stringToDate (removeValue (list !! 5)))
     ([removeValue (list !! 6)])
     (removeValue (list !! 7))
-    (removeValue (list !! 8))
-    (removeValue (list !! 9))
+    (stringToDate (removeValue (list !! 8)))
+    (stringToDate (removeValue (list !! 9)))
     (if Prelude.length list > 10 then [removeValue (list !! 10)] else [""])
 
 parseAllElements :: [[Value]] -> [Activity]
@@ -111,4 +112,4 @@ getUpdateActivitiesR = do
     valueR <- liftIO $ exampleGetValue (Data.Text.pack(sheetId)) (Data.Text.pack(rangeSheet))
     let activities = parseAllElements (Prelude.tail (valueR^.vrValues))
     saveAllActivities activities
-    returnJson (toJSON rmWorked)
+    returnJson (toJSON rmWorked)    

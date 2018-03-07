@@ -16,13 +16,13 @@ Activity json
     activityId String
     nome String
     descricao String
-    dataHoraLiberacao String
-    dataHoraLimiteEnvioNormal String
-    dataHoraLimiteEnvioAtraso String
+    dataHoraLiberacao UTCTime
+    dataHoraLimiteEnvioNormal UTCTime
+    dataHoraLimiteEnvioAtraso UTCTime
     monitores [String]
     corretor String
-    dataInicioCorrecao String
-    dataEntregaCorrecao String
+    dataInicioCorrecao UTCTime
+    dataEntregaCorrecao UTCTime
     linksVideoAulas [String]
     deriving Eq
     deriving Show
