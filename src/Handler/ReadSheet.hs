@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric, TemplateHaskell, DeriveAnyClass, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
-module Handler.ReadSheet where 
+module Handler.ReadSheet where
 
 import Network.Google.Resource.Sheets.Spreadsheets.Get
 import Network.Google.Sheets
@@ -36,7 +36,7 @@ rmError :: ResponseMessage
 rmError = ResponseMessage { message = "Something wrong happened. Spreadsheet not updated." }
 
 ---------------------------------------------------------------------------------
--- | 
+-- |
 -- This gets the Information about an spreadsheet.
 -- In order to be able to run these examples you need to
 -- create a service acount from google's developers console
@@ -55,9 +55,9 @@ exampleGetSheet sheetID = do
     send (spreadsheetsGet sheetID )
 
 -- |
--- you pass the sheet id and a range (eg. "sheet1!A1:C3") in that sheet 
+-- you pass the sheet id and a range (eg. "sheet1!A1:C3") in that sheet
 -- and it retreives the values in the specified range
-exampleGetValue :: Text -> Text -> IO ValueRange 
+exampleGetValue :: Text -> Text -> IO ValueRange
 exampleGetValue sheetID range = do
   lgr <- newLogger Debug stdout
   env <- newEnv <&> (envLogger .~ lgr) Prelude.. (envScopes .~ spreadsheetsScope)
@@ -65,8 +65,8 @@ exampleGetValue sheetID range = do
     send  (spreadsheetsValuesGet sheetID range )
 
 parseToActivity :: [Value] -> Activity
-parseToActivity list = Activity 
-    (removeValue (list !! 0)) 
+parseToActivity list = Activity
+    (removeValue (list !! 0))
     (removeValue (list !! 1))
     (removeValue (list !! 2))
     (stringToDate (removeValue (list !! 3)))
@@ -112,4 +112,4 @@ getUpdateActivitiesR = do
     valueR <- liftIO $ exampleGetValue (Data.Text.pack(sheetId)) (Data.Text.pack(rangeSheet))
     let activities = parseAllElements (Prelude.tail (valueR^.vrValues))
     saveAllActivities activities
-    returnJson (toJSON rmWorked)    
+    returnJson (toJSON rmWorked)

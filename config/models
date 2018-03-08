@@ -8,6 +8,7 @@ Submission json
     total Int
     exceptions Int
     listName Text
+    delay Bool
     SubKey studentId listName
     deriving Eq
     deriving Show

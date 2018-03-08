@@ -27,7 +27,7 @@ import Control.Monad.Trans.Reader as Reader
 import           Control.Monad.IO.Class  (liftIO)
 
 data Result = Submission { studentId :: String, failed :: Int,
-                    passed :: Int, total :: Int, exceptions :: Int, listName :: String} deriving (Show, Generic, ToJSON, FromJSON)
+                    passed :: Int, total :: Int, exceptions :: Int, listName :: String, delay :: Bool} deriving (Show, Generic, ToJSON, FromJSON)
 
 
 main :: String -> IO ()
@@ -46,7 +46,7 @@ generateResult studentId testsResult = do
   let exceptions = errors testsResult
   let failed = failures testsResult
   let output = Submission { studentId = studentId, failed = failed, passed = passed,
-                          total = total,  exceptions = exceptions, listName = "lista7"}
+                          total = total,  exceptions = exceptions, listName = "lista7", delay = True}
 
   I.writeFile fileName (encodeToLazyText output)
   -- T.putStrLn "Write file in result directory json worked"
