@@ -1,5 +1,5 @@
 module TestSum (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -29,4 +29,5 @@ t6_1 = insert 'B' t6
 t6_2 = insert 'A' t6_1
 testSum5 = TestCase (assertEqual "Test Sum 5" (Map.fromList [('A',3),('B',2)]) (sumBag t5_1 t6_2))
 
+tests :: [Test]
 tests = [testSum2, testSum3, testSum4, testSum5]

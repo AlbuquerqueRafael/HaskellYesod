@@ -1,4 +1,4 @@
-module MultisetMap (
+module Student (
     insert,
     remove,
     search,

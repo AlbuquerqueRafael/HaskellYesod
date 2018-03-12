@@ -1,5 +1,5 @@
 module TestMinus (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -43,5 +43,6 @@ testMinus12 = TestCase (assertEqual "Test minus 12" bag2 (minus bag2 bag5))
 
 testMinus13 = TestCase (assertEqual "Test minus 13" (Map.fromList [('A',4),('B',3)]) (minus bag2 bag6))
 
+tests :: [Test]
 tests = [testMinus1,testMinus2, testMinus3, testMinus4, testMinus5, testMinus6, testMinus7, testMinus8, testMinus9,
     testMinus10,testMinus11,testMinus12,testMinus13]

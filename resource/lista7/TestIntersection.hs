@@ -1,5 +1,5 @@
 module TestIntersection (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -103,5 +103,6 @@ k10_5 = correctInsert 'A' k10_4
 k10_6 = correctInsert 'C' k10_5
 k10_7 = correctInsert 'b' k10_6
 
+tests :: [Test]
 tests =  [testIntersection1, testIntersection2, testIntersection3, testIntersection4, testIntersection5, testIntersection6, testIntersection7,
                   testIntersection8, testIntersection9, testIntersection9]

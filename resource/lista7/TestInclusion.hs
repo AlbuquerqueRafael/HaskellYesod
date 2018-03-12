@@ -1,5 +1,5 @@
 module TestInclusion (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map

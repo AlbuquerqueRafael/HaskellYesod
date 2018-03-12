@@ -1,5 +1,5 @@
 module TestSize (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -34,4 +34,5 @@ testSize7 = TestCase (assertEqual "Test Size 7" 1 (size t7))
 t8 = remove 'A' t7
 testSize8 = TestCase (assertEqual "Test Size 8" 0 (size t8))
 
+tests :: [Test]
 tests = [testSize1, testSize2, testSize3, testSize4, testSize5, testSize6, testSize7, testSize8]

@@ -1,5 +1,5 @@
 module TestRemove (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -41,6 +41,7 @@ testRemove6 =
 testRemove7 =
     TestCase (assertEqual "Test remove 7" normalBag (remove 'k' normalBag))
 
+tests :: [Test]
 tests = [
     testRemove1, testRemove2, testRemove3,
     testRemove4, testRemove5, testRemove6,

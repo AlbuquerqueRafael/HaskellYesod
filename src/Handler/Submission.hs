@@ -10,6 +10,7 @@
 module Handler.Submission where
 
 import System.Process
+import Prelude as P
 import Import
 import System.IO as T
 import Control.Exception
@@ -130,22 +131,22 @@ initCorrection filePath listNumber = do
 
 writeToFile :: String -> String -> HandlerT App IO ()
 writeToFile fileContent listNumber =
-  liftIO $ T.writeFile ("resource/" Prelude.++ listNumber Prelude.++ "/MultisetMap.hs") fileContent
+  liftIO $ T.writeFile ("resource/" P.++ listNumber P.++ "/Student.hs") fileContent
 
 initCommand :: String -> String -> Bool -> HandlerT App IO ()
 initCommand registration listNumber correctDelay = do
-  let cmd = "ghci ./resource/" Prelude.++ listNumber Prelude.++ "/GenerateFile.hs -iresource/" Prelude.++ listNumber Prelude.++ " -e \"main \\\"" Prelude.++ registration Prelude.++ "\\\"\""
+  let cmd = "ghci ./resource/GenerateFile.hs -iresource/" P.++ listNumber P.++  " -e \"main \\\"" P.++ listNumber P.++ "\\\" \\\"" P.++ registration P.++ "\\\"\""
   result <- liftIO $ try' (callCommand cmd)
   case result of
       Left _ -> sendResponseStatus status400 $ toJSON rmCompilationProblems
       Right () -> do
-                    contents <- liftIO $ Prelude.readFile $ "./resource/lista7/results/" Prelude.++ registration Prelude.++ ".json"
+                    contents <- liftIO $ P.readFile $ "./resource/" P.++ listNumber P.++ "/results/" P.++ registration P.++ ".json"
                     let readJson = decode $ C.pack contents :: Maybe Submission
                     case readJson of
                         Just (Submission studentId failed passed total exceptions listName delay) -> do
                             ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName==. listName] [LimitTo 1] :: Import.Handler [Entity Submission]
                             -- Checks if the student already did a submition. If yes, update(replace) the data. Else, insert
-                            _ <- if (Prelude.length ms) == 0
+                            _ <- if (P.length ms) == 0
                                    then do
                                      _ <- runDB $ insert $ Submission studentId failed passed total exceptions listName correctDelay
                                      sendResponseStatus status200 $ toJSON rmWorked

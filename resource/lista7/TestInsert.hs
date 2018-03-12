@@ -1,5 +1,5 @@
 module TestInsert (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -24,4 +24,5 @@ testInsert4 = TestCase (assertEqual "Test Insert 4" (Map.fromList [('A',1), ('B'
 t5 = remove 'A' t4_1
 testInsert5 = TestCase (assertEqual "Test Insert 5" (Map.fromList [('B',1), ('C',1)]) (insert 'C' t5))
 
+tests :: [Test]
 tests = [testInsert1, testInsert2, testInsert3, testInsert4, testInsert5]

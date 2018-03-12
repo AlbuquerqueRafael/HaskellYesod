@@ -1,5 +1,5 @@
 module TestSearch (tests) where
-import MultisetMap
+import Student
 import Test.HUnit
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -32,6 +32,7 @@ testSearch6 = TestCase (assertEqual "Test search 6" 9 (search 'c' normalBag))
 -- mas a bag possui vários outros elementos
 testSearch7 = TestCase (assertEqual "Test search 7" 1 (search 'b' normalBag))
 
+tests :: [Test]
 tests = [
     testSearch1, testSearch2, testSearch3,
     testSearch4, testSearch5, testSearch6,
