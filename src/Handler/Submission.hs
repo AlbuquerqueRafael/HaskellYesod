@@ -68,32 +68,30 @@ delayedSubmission = StatusDateSubmission { status = 2 }
 outOfTime :: StatusDateSubmission
 outOfTime = StatusDateSubmission { status = 3 }
 
-
 postSubmissionR :: Import.Handler ()
 postSubmissionR = do
   listNumber <- runInputPost $ ireq textField "listNumber"
   result <- runInputPost $ iopt fileField "studentSubmission"
   studentId <- runInputPost $ ireq textField "studentId"
 
-  statusSubmission <- liftIO $ (hasSubmissionDelay (unpack listNumber)) 
+  statusSubmission <- (hasSubmissionDelay (unpack listNumber))
 
-  case statusSubmission of Just ( StatusDateSubmission fileInfo) -> do
-                              liftIO $ T.print fileInfo
-                              sendResponseStatus status400 $ toJSON rmError
-                           Nothing -> sendResponseStatus status400 $ toJSON rmError
+  let StatusDateSubmission submissionStatusResult = statusSubmission
 
-
-
-  -- case result of Just fileInfo -> do
-  --                   let mounthInitalPath = "resource/" <> listNumber <> "/students/"
-  --                   let destination = unpack $ mounthInitalPath <> fileName fileInfo
-  --                   liftIO $ fileMove fileInfo destination
-  --                   initCorrection destination listNumber
-  --                   initCommand (unpack studentId) (unpack listNumber)
-  --                   sendResponseStatus status200 $ toJSON rmWorked
-  --                Nothing -> sendResponseStatus status400 $ toJSON rmError
+  if (submissionStatusResult == (status earlySubmission))
+    then
+      sendResponseStatus status400 $ toJSON rmEarlySubmission
+  else if (submissionStatusResult ==  (status okSubmission))
+    then do
+      initSubmission result listNumber studentId (False)
+  else if (submissionStatusResult ==  (status delayedSubmission))
+    then do
+      initSubmission result listNumber studentId (True)
+  else
+    sendResponseStatus status400 $ toJSON rmOutOfTime
 
 
+hasSubmissionDelay :: String -> HandlerT App IO StatusDateSubmission
 hasSubmissionDelay listNumber = do
   ms <- runDB $ selectList [ActivityActivityId ==. listNumber] [] :: Import.Handler [Entity Activity]
   let dataHoraLimiteEnvioNormal = (activityDataHoraLimiteEnvioNormal (entityVal  (ms !! 0) ) )
@@ -102,18 +100,27 @@ hasSubmissionDelay listNumber = do
   now <- liftIO getCurrentTime
 
   if (now < dataHoraLiberacao)
-    then do
-      return  earlySubmission
+    then
+      return earlySubmission
   else if (now >= dataHoraLiberacao && now <= dataHoraLimiteEnvioNormal)
-    then do
-      return  okSubmission
+    then
+      return okSubmission
   else if (now >= dataHoraLimiteEnvioNormal && now <= dataHoraLimiteEnvioAtraso)
-    then do
+    then
       return delayedSubmission
-  else do
+  else
     return outOfTime
 
-
+initSubmission :: Maybe FileInfo -> Text -> Text -> Bool -> HandlerT App IO ()
+initSubmission result listNumber studentId delay = do
+  case result of Just fileInfo -> do
+                    let mounthInitalPath = "resource/" <> listNumber <> "/students/"
+                    let destination = unpack $ mounthInitalPath <> fileName fileInfo
+                    liftIO $ fileMove fileInfo destination
+                    initCorrection destination listNumber
+                    initCommand (unpack studentId) (unpack listNumber) (delay)
+                    sendResponseStatus status200 $ toJSON rmWorked
+                 Nothing -> sendResponseStatus status400 $ toJSON rmError
 
 
 initCorrection :: FilePath -> Text -> HandlerT App IO ()
@@ -125,12 +132,12 @@ writeToFile :: String -> String -> HandlerT App IO ()
 writeToFile fileContent listNumber =
   liftIO $ T.writeFile ("resource/" Prelude.++ listNumber Prelude.++ "/MultisetMap.hs") fileContent
 
-initCommand :: String -> String -> HandlerT App IO ()
-initCommand registration listNumber = do
+initCommand :: String -> String -> Bool -> HandlerT App IO ()
+initCommand registration listNumber correctDelay = do
   let cmd = "ghci ./resource/" Prelude.++ listNumber Prelude.++ "/GenerateFile.hs -iresource/" Prelude.++ listNumber Prelude.++ " -e \"main \\\"" Prelude.++ registration Prelude.++ "\\\"\""
   result <- liftIO $ try' (callCommand cmd)
   case result of
-      Left _ -> sendResponseStatus status200 $ toJSON rmCompilationProblems
+      Left _ -> sendResponseStatus status400 $ toJSON rmCompilationProblems
       Right () -> do
                     contents <- liftIO $ Prelude.readFile $ "./resource/lista7/results/" Prelude.++ registration Prelude.++ ".json"
                     let readJson = decode $ C.pack contents :: Maybe Submission
@@ -140,11 +147,11 @@ initCommand registration listNumber = do
                             -- Checks if the student already did a submition. If yes, update(replace) the data. Else, insert
                             _ <- if (Prelude.length ms) == 0
                                    then do
-                                     _ <- runDB $ insert $ Submission studentId failed passed total exceptions listName delay
+                                     _ <- runDB $ insert $ Submission studentId failed passed total exceptions listName correctDelay
                                      sendResponseStatus status200 $ toJSON rmWorked
                                  else do
                                    let submissionID = (unSqlBackendKey ( unSubmissionKey (entityKey (ms !! 0) ) ))
-                                   _ <- runDB $ replace (toSqlKey submissionID :: Key Submission) $ Submission studentId failed passed total exceptions listName delay
+                                   _ <- runDB $ replace (toSqlKey submissionID :: Key Submission) $ Submission studentId failed passed total exceptions listName correctDelay
                                    sendResponseStatus status200 $ toJSON rmWorked
                             sendResponseStatus status200 $ toJSON rmWorked
                         _ -> do
