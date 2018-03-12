@@ -86,7 +86,7 @@ postSubmissionR = do
 
     if submissionStatusResult == status earlySubmission
     then
-        sendResponseStatus status400 $ toJSON rmEarlySubmission
+        sendResponseStatus status200 $ toJSON rmEarlySubmission
     else if submissionStatusResult ==  status okSubmission
     then
         initSubmission result listNumber studentId False
@@ -97,7 +97,7 @@ postSubmissionR = do
     then
         sendResponseStatus status404 $ toJSON rmActivityNotFound
     else
-        sendResponseStatus status400 $ toJSON rmOutOfTime
+        sendResponseStatus status200 $ toJSON rmOutOfTime
 
 
 hasSubmissionDelay :: String -> Import.Handler StatusSubmission

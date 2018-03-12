@@ -52,7 +52,8 @@ dependencies:
 - time
 - utf8-string
 - gogol
-- gogol-sheets 
+- gogol-sheets
+- wai-cors
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
 library:

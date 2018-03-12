@@ -26,6 +26,8 @@ import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr,
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.Wai (Middleware)
+import Network.Wai.Middleware.Cors          (CorsResourcePolicy(..), cors)
+import Network.Wai.Middleware.AddHeaders    (addHeaders)
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
                                              runSettings, setHost,
@@ -90,7 +92,7 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ logWare $ defaultMiddlewaresNoLogging appPlain
+    return $ logWare . allowCsrf . corsified $ defaultMiddlewaresNoLogging appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
@@ -105,6 +107,32 @@ makeLogWare foundation =
         , destination = Logger $ loggerSet $ appLogger foundation
         }
 
+-- | @x-csrf-token@ allowance.
+-- The following header will be set: @Access-Control-Allow-Headers: x-csrf-token@.
+allowCsrf :: Middleware
+allowCsrf = addHeaders [("Access-Control-Allow-Headers", "x-csrf-token,authorization")]
+
+-- | CORS middleware configured with 'appCorsResourcePolicy'.
+corsified :: Middleware
+corsified = cors (const $ Just appCorsResourcePolicy)
+
+-- | Cors resource policy to be used with 'corsified' middleware.
+--
+-- This policy will set the following:
+--
+-- * RequestHeaders: @Content-Type@
+-- * MethodsAllowed: @OPTIONS, GET, PUT, POST@
+appCorsResourcePolicy :: CorsResourcePolicy
+appCorsResourcePolicy = CorsResourcePolicy {
+    corsOrigins        = Nothing
+  , corsMethods        = ["OPTIONS", "GET", "PUT", "POST"]
+  , corsRequestHeaders = ["Authorization", "Content-Type"]
+  , corsExposedHeaders = Nothing
+  , corsMaxAge         = Nothing
+  , corsVaryOrigin     = False
+  , corsRequireOrigin  = False
+  , corsIgnoreFailures = False
+}
 
 -- | Warp settings for the given foundation value.
 warpSettings :: App -> Settings
