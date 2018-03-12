@@ -21,7 +21,7 @@ instance FromJSON ResponseMessage where
     parseJSON _ = empty
 
 instance ToJSON ResponseMessage where
-    toJSON (ResponseMessage message) = object ["message" .= message]
+    toJSON (ResponseMessage m) = object ["message" .= m]
 
 newtype StatusSubmission = StatusSubmission { status :: Integer } deriving (Show, Generic)
 
@@ -30,7 +30,7 @@ instance FromJSON StatusSubmission where
     parseJSON _ = empty
 
 instance ToJSON StatusSubmission where
-    toJSON (StatusSubmission status) = object ["status" .= status]
+    toJSON (StatusSubmission s) = object ["status" .= s]
 
 rmWorked :: ResponseMessage
 rmWorked  = ResponseMessage { message = "File was successfully uploaded" }
@@ -156,7 +156,7 @@ initCommand registration listNumber correctDelay = do
                     contents <- liftIO $ Prelude.readFile $ "./resource/lista7/results/" Prelude.++ registration Prelude.++ ".json"
                     let readJson = decode $ C.pack contents :: Maybe Submission
                     case readJson of
-                        Just (Submission studentId failed passed total exceptions listName delay) -> do
+                        Just (Submission studentId failed passed total exceptions listName _) -> do
                             ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName==. listName] [LimitTo 1] :: Import.Handler [Entity Submission]
                             -- Checks if the student already did a submition. If yes, update(replace) the data. Else, insert
                             _ <- if Prelude.null ms
