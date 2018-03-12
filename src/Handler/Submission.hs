@@ -164,3 +164,9 @@ getSubmissionR = do
   studentId <- runInputGet $ ireq textField "studentId"
   ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName ==. listName] [] :: Import.Handler [Entity Submission]
   return $ object ["submission" .= ms]
+
+
+getAllSubmissionsR :: Import.Handler Value
+getAllSubmissionsR = do
+    ms <- runDB $ selectList [] [] :: Import.Handler [Entity Submission]
+    return $ object ["submissions" .= ms]
