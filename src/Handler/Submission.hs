@@ -10,7 +10,7 @@ import System.Process
 import Import
 import System.IO as T
 import Control.Exception
-import Database.Persist.Sql  (SqlPersistM, runSqlPersistMPool, rawExecute, rawSql, unSingle, connEscapeName, unSqlBackendKey, toSqlKey)
+import Database.Persist.Sql  (unSqlBackendKey, toSqlKey)
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Aeson (decode)
 
