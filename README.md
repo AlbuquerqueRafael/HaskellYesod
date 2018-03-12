@@ -3,7 +3,8 @@
 1. If you haven't already, [install Stack](https://haskell-lang.org/get-started)
 	* On POSIX systems, this is usually `curl -sSL https://get.haskellstack.org/ | sh`
 2. Install the `yesod` command line tool: `stack install yesod-bin --install-ghc`
-3. Build libraries: `stack build`
+3. Install PostgreSql and configure according with the following link: https://github.com/yesodweb/yesod/wiki/Setting-up-PostgreSQL
+4. Build libraries: `stack build`
 
 If you have trouble, refer to the [Yesod Quickstart guide](https://www.yesodweb.com/page/quickstart) for additional detail.
 
