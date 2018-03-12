@@ -3,9 +3,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
--- {-# LANGUAGE #-}
--- {-# LANGUAGE #-}
--- {-# LANGUAGE #-}
 
 module Handler.Submission where
 
@@ -14,7 +11,7 @@ import Prelude as P
 import Import
 import System.IO as T
 import Control.Exception
-import Database.Persist.Sql  (SqlPersistM, runSqlPersistMPool, rawExecute, rawSql, unSingle, connEscapeName, unSqlBackendKey, toSqlKey)
+import Database.Persist.Sql  (unSqlBackendKey, toSqlKey)
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Aeson (decode)
 
@@ -25,16 +22,16 @@ instance FromJSON ResponseMessage where
     parseJSON _ = empty
 
 instance ToJSON ResponseMessage where
-    toJSON (ResponseMessage message) = object ["message" .= message]
+    toJSON (ResponseMessage m) = object ["message" .= m]
 
-newtype StatusDateSubmission = StatusDateSubmission { status :: Integer } deriving (Show, Generic)
+newtype StatusSubmission = StatusSubmission { status :: Integer } deriving (Show, Generic)
 
-instance FromJSON StatusDateSubmission where
-    parseJSON (Object v) = StatusDateSubmission <$> v .: "status"
+instance FromJSON StatusSubmission where
+    parseJSON (Object v) = StatusSubmission <$> v .: "status"
     parseJSON _ = empty
 
-instance ToJSON StatusDateSubmission where
-    toJSON (StatusDateSubmission status) = object ["status" .= status]
+instance ToJSON StatusSubmission where
+    toJSON (StatusSubmission s) = object ["status" .= s]
 
 rmWorked :: ResponseMessage
 rmWorked  = ResponseMessage { message = "File was successfully uploaded" }
@@ -54,72 +51,89 @@ rmEarlySubmission = ResponseMessage { message = "The submission is not open yet"
 rmOutOfTime :: ResponseMessage
 rmOutOfTime = ResponseMessage { message = "The submission is out of time" }
 
+rmActivityNotFound :: ResponseMessage
+rmActivityNotFound = ResponseMessage { message = "Activity name not found" }
+
+rmSubmissionResultNotAvailable :: ResponseMessage
+rmSubmissionResultNotAvailable = ResponseMessage { message = "Submission result not available yet" }
+
 try' :: IO a ->  IO (Either IOException a)
 try' =  Control.Exception.try
 
-earlySubmission :: StatusDateSubmission
-earlySubmission = StatusDateSubmission { status = 0}
+earlySubmission :: StatusSubmission
+earlySubmission = StatusSubmission { status = 0 }
 
-okSubmission :: StatusDateSubmission
-okSubmission = StatusDateSubmission { status = 1}
+okSubmission :: StatusSubmission
+okSubmission = StatusSubmission { status = 1 }
 
-delayedSubmission :: StatusDateSubmission
-delayedSubmission = StatusDateSubmission { status = 2 }
+delayedSubmission :: StatusSubmission
+delayedSubmission = StatusSubmission { status = 2 }
 
-outOfTime :: StatusDateSubmission
-outOfTime = StatusDateSubmission { status = 3 }
+outOfTime :: StatusSubmission
+outOfTime = StatusSubmission { status = 3 }
+
+activityNotFound :: StatusSubmission
+activityNotFound = StatusSubmission { status = 4 }
 
 postSubmissionR :: Import.Handler ()
 postSubmissionR = do
-  listNumber <- runInputPost $ ireq textField "listNumber"
-  result <- runInputPost $ iopt fileField "studentSubmission"
-  studentId <- runInputPost $ ireq textField "studentId"
+    listNumber <- runInputPost $ ireq textField "listNumber"
+    result <- runInputPost $ iopt fileField "studentSubmission"
+    studentId <- runInputPost $ ireq textField "studentId"
 
-  statusSubmission <- (hasSubmissionDelay (unpack listNumber))
+    statusSubmission <- hasSubmissionDelay (unpack listNumber)
 
-  let StatusDateSubmission submissionStatusResult = statusSubmission
+    let StatusSubmission submissionStatusResult = statusSubmission
 
-  if (submissionStatusResult == (status earlySubmission))
+    if submissionStatusResult == status earlySubmission
     then
-      sendResponseStatus status400 $ toJSON rmEarlySubmission
-  else if (submissionStatusResult ==  (status okSubmission))
-    then do
-      initSubmission result listNumber studentId (False)
-  else if (submissionStatusResult ==  (status delayedSubmission))
-    then do
-      initSubmission result listNumber studentId (True)
-  else
-    sendResponseStatus status400 $ toJSON rmOutOfTime
+        sendResponseStatus status400 $ toJSON rmEarlySubmission
+    else if submissionStatusResult ==  status okSubmission
+    then
+        initSubmission result listNumber studentId False
+    else if submissionStatusResult ==  status delayedSubmission
+    then
+        initSubmission result listNumber studentId True
+    else if submissionStatusResult == status activityNotFound
+    then
+        sendResponseStatus status404 $ toJSON rmActivityNotFound
+    else
+        sendResponseStatus status400 $ toJSON rmOutOfTime
 
 
-hasSubmissionDelay :: String -> HandlerT App IO StatusDateSubmission
+hasSubmissionDelay :: String -> Import.Handler StatusSubmission
 hasSubmissionDelay listNumber = do
-  ms <- runDB $ selectList [ActivityActivityId ==. listNumber] [] :: Import.Handler [Entity Activity]
-  let dataHoraLimiteEnvioNormal = (activityDataHoraLimiteEnvioNormal (entityVal  (ms !! 0) ) )
-  let dataHoraLimiteEnvioAtraso = (activityDataHoraLimiteEnvioAtraso (entityVal  (ms !! 0) ) )
-  let dataHoraLiberacao = (activityDataHoraLiberacao (entityVal  (ms !! 0) ) )
-  now <- liftIO getCurrentTime
+    ms <- runDB $ selectList [ActivityActivityId ==. listNumber] [] :: Import.Handler [Entity Activity]
 
-  if (now < dataHoraLiberacao)
+    if P.null ms
     then
-      return earlySubmission
-  else if (now >= dataHoraLiberacao && now <= dataHoraLimiteEnvioNormal)
-    then
-      return okSubmission
-  else if (now >= dataHoraLimiteEnvioNormal && now <= dataHoraLimiteEnvioAtraso)
-    then
-      return delayedSubmission
-  else
-    return outOfTime
+        return activityNotFound
+    else do
+        let dataHoraLimiteEnvioNormal = activityDataHoraLimiteEnvioNormal (entityVal  (P.head ms))
+        let dataHoraLimiteEnvioAtraso = activityDataHoraLimiteEnvioAtraso (entityVal  (P.head ms))
+        let dataHoraLiberacao = activityDataHoraLiberacao (entityVal  (P.head ms))
+        now <- liftIO getCurrentTime
 
-initSubmission :: Maybe FileInfo -> Text -> Text -> Bool -> HandlerT App IO ()
-initSubmission result listNumber studentId delay = do
+        if now < dataHoraLiberacao
+            then
+            return earlySubmission
+        else if now >= dataHoraLiberacao && now <= dataHoraLimiteEnvioNormal
+        then
+            return okSubmission
+        else if now >= dataHoraLimiteEnvioNormal && now <= dataHoraLimiteEnvioAtraso
+        then
+            return delayedSubmission
+        else
+            return outOfTime
+
+initSubmission :: Maybe FileInfo -> Text -> Text -> Bool -> Import.Handler ()
+initSubmission result listNumber studentId delay =
   case result of Just fileInfo -> do
                     let mounthInitalPath = "resource/" <> listNumber <> "/students/"
                     let destination = unpack $ mounthInitalPath <> fileName fileInfo
                     liftIO $ fileMove fileInfo destination
                     initCorrection destination listNumber
-                    initCommand (unpack studentId) (unpack listNumber) (delay)
+                    initCommand (unpack studentId) (unpack listNumber) delay
                     sendResponseStatus status200 $ toJSON rmWorked
                  Nothing -> sendResponseStatus status400 $ toJSON rmError
 
@@ -143,25 +157,43 @@ initCommand registration listNumber correctDelay = do
                     contents <- liftIO $ P.readFile $ "./resource/" P.++ listNumber P.++ "/results/" P.++ registration P.++ ".json"
                     let readJson = decode $ C.pack contents :: Maybe Submission
                     case readJson of
-                        Just (Submission studentId failed passed total exceptions listName delay) -> do
+                        Just (Submission studentId failed passed total exceptions listName _) -> do
                             ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName==. listName] [LimitTo 1] :: Import.Handler [Entity Submission]
                             -- Checks if the student already did a submition. If yes, update(replace) the data. Else, insert
-                            _ <- if (P.length ms) == 0
+                            _ <- if P.null ms
                                    then do
                                      _ <- runDB $ insert $ Submission studentId failed passed total exceptions listName correctDelay
                                      sendResponseStatus status200 $ toJSON rmWorked
                                  else do
-                                   let submissionID = (unSqlBackendKey ( unSubmissionKey (entityKey (ms !! 0) ) ))
+                                   let submissionID = unSqlBackendKey (unSubmissionKey (entityKey (P.head ms)))
                                    _ <- runDB $ replace (toSqlKey submissionID :: Key Submission) $ Submission studentId failed passed total exceptions listName correctDelay
                                    sendResponseStatus status200 $ toJSON rmWorked
                             sendResponseStatus status200 $ toJSON rmWorked
-                        _ -> do
+                        _ ->
                           sendResponseStatus status400 $ toJSON rmUploadProblems
-
 
 getSubmissionR :: Import.Handler Value
 getSubmissionR = do
-  listName <- runInputGet $ ireq textField "listName"
-  studentId <- runInputGet $ ireq textField "studentId"
-  ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName ==. listName] [] :: Import.Handler [Entity Submission]
-  return $ object ["submission" .= ms]
+    listName <- runInputGet $ ireq textField "listName"
+    studentId <- runInputGet $ ireq textField "studentId"
+
+    statusSubmission <- hasSubmissionDelay (unpack listName)
+
+    let StatusSubmission submissionStatusResult = statusSubmission
+
+    if submissionStatusResult == status outOfTime
+    then do
+        ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName ==. listName] [] :: Import.Handler [Entity Submission]
+        return $ object ["submission" .= ms]
+    else if submissionStatusResult == status activityNotFound
+    then
+        sendResponseStatus status404 $ toJSON rmActivityNotFound
+    else
+        sendResponseStatus status400 $ toJSON rmSubmissionResultNotAvailable
+
+
+
+-- getAllSubmissionsR :: Import.Handler Value
+-- getAllSubmissionsR = do
+--     ms <- runDB $ selectList [] [] :: Import.Handler [Entity Submission]
+--     return $ object ["submissions" .= ms]
