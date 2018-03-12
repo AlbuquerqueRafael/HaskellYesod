@@ -53,6 +53,9 @@ rmOutOfTime = ResponseMessage { message = "The submission is out of time" }
 rmActivityNotFound :: ResponseMessage
 rmActivityNotFound = ResponseMessage { message = "Activity name not found" }
 
+rmSubmissionResultNotAvailable :: ResponseMessage
+rmSubmissionResultNotAvailable = ResponseMessage { message = "Submission result not available yet" }
+
 try' :: IO a ->  IO (Either IOException a)
 try' =  Control.Exception.try
 
@@ -168,16 +171,28 @@ initCommand registration listNumber correctDelay = do
                         _ ->
                           sendResponseStatus status400 $ toJSON rmUploadProblems
 
-
 getSubmissionR :: Import.Handler Value
 getSubmissionR = do
-  listName <- runInputGet $ ireq textField "listName"
-  studentId <- runInputGet $ ireq textField "studentId"
-  ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName ==. listName] [] :: Import.Handler [Entity Submission]
-  return $ object ["submission" .= ms]
+    listName <- runInputGet $ ireq textField "listName"
+    studentId <- runInputGet $ ireq textField "studentId"
+
+    statusSubmission <- hasSubmissionDelay (unpack listName)
+
+    let StatusSubmission submissionStatusResult = statusSubmission
+
+    if submissionStatusResult == status outOfTime
+    then do
+        ms <- runDB $ selectList [SubmissionStudentId ==. studentId, SubmissionListName ==. listName] [] :: Import.Handler [Entity Submission]
+        return $ object ["submission" .= ms]
+    else if submissionStatusResult == status activityNotFound
+    then
+        sendResponseStatus status404 $ toJSON rmActivityNotFound
+    else
+        sendResponseStatus status400 $ toJSON rmSubmissionResultNotAvailable
 
 
-getAllSubmissionsR :: Import.Handler Value
-getAllSubmissionsR = do
-    ms <- runDB $ selectList [] [] :: Import.Handler [Entity Submission]
-    return $ object ["submissions" .= ms]
+
+-- getAllSubmissionsR :: Import.Handler Value
+-- getAllSubmissionsR = do
+--     ms <- runDB $ selectList [] [] :: Import.Handler [Entity Submission]
+--     return $ object ["submissions" .= ms]
