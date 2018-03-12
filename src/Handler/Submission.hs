@@ -3,9 +3,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
--- {-# LANGUAGE #-}
--- {-# LANGUAGE #-}
--- {-# LANGUAGE #-}
 
 module Handler.Submission where
 
@@ -76,49 +73,54 @@ activityNotFound = StatusSubmission { status = 4 }
 
 postSubmissionR :: Import.Handler ()
 postSubmissionR = do
-  listNumber <- runInputPost $ ireq textField "listNumber"
-  result <- runInputPost $ iopt fileField "studentSubmission"
-  studentId <- runInputPost $ ireq textField "studentId"
+    listNumber <- runInputPost $ ireq textField "listNumber"
+    result <- runInputPost $ iopt fileField "studentSubmission"
+    studentId <- runInputPost $ ireq textField "studentId"
 
-  statusSubmission <- hasSubmissionDelay (unpack listNumber)
+    statusSubmission <- hasSubmissionDelay (unpack listNumber)
 
-  let StatusSubmission submissionStatusResult = statusSubmission
+    let StatusSubmission submissionStatusResult = statusSubmission
 
-  if submissionStatusResult == status earlySubmission
+    if submissionStatusResult == status earlySubmission
     then
-      sendResponseStatus status400 $ toJSON rmEarlySubmission
-  else if submissionStatusResult ==  status okSubmission
+        sendResponseStatus status400 $ toJSON rmEarlySubmission
+    else if submissionStatusResult ==  status okSubmission
     then
-      initSubmission result listNumber studentId False
-  else if submissionStatusResult ==  status delayedSubmission
+        initSubmission result listNumber studentId False
+    else if submissionStatusResult ==  status delayedSubmission
     then
-      initSubmission result listNumber studentId True
-  else
-    sendResponseStatus status400 $ toJSON rmOutOfTime
+        initSubmission result listNumber studentId True
+    else if submissionStatusResult == status activityNotFound
+    then
+        sendResponseStatus status404 $ toJSON rmActivityNotFound
+    else
+        sendResponseStatus status400 $ toJSON rmOutOfTime
 
 
 hasSubmissionDelay :: String -> Import.Handler StatusSubmission
 hasSubmissionDelay listNumber = do
-    ms <- runDB $ selectList [ActivityActivityId ==. listNumber] [] :: Import.Handler [Entity Activity]
+    ms <- runDB $ selectList [ActivityNome ==. listNumber] [] :: Import.Handler [Entity Activity]
 
-    -- if Prelude.null ms then
-    --     return activityNotFound
-    let dataHoraLimiteEnvioNormal = activityDataHoraLimiteEnvioNormal (entityVal  (Prelude.head ms))
-    let dataHoraLimiteEnvioAtraso = activityDataHoraLimiteEnvioAtraso (entityVal  (Prelude.head ms))
-    let dataHoraLiberacao = activityDataHoraLiberacao (entityVal  (Prelude.head ms))
-    now <- liftIO getCurrentTime
+    if Prelude.null ms
+    then
+        return activityNotFound
+    else do
+        let dataHoraLimiteEnvioNormal = activityDataHoraLimiteEnvioNormal (entityVal  (Prelude.head ms))
+        let dataHoraLimiteEnvioAtraso = activityDataHoraLimiteEnvioAtraso (entityVal  (Prelude.head ms))
+        let dataHoraLiberacao = activityDataHoraLiberacao (entityVal  (Prelude.head ms))
+        now <- liftIO getCurrentTime
 
-    if now < dataHoraLiberacao
-    then
-      return earlySubmission
-    else if now >= dataHoraLiberacao && now <= dataHoraLimiteEnvioNormal
-    then
-      return okSubmission
-    else if now >= dataHoraLimiteEnvioNormal && now <= dataHoraLimiteEnvioAtraso
-    then
-      return delayedSubmission
-    else
-        return outOfTime
+        if now < dataHoraLiberacao
+            then
+            return earlySubmission
+        else if now >= dataHoraLiberacao && now <= dataHoraLimiteEnvioNormal
+        then
+            return okSubmission
+        else if now >= dataHoraLimiteEnvioNormal && now <= dataHoraLimiteEnvioAtraso
+        then
+            return delayedSubmission
+        else
+            return outOfTime
 
 initSubmission :: Maybe FileInfo -> Text -> Text -> Bool -> Import.Handler ()
 initSubmission result listNumber studentId delay =
@@ -163,7 +165,7 @@ initCommand registration listNumber correctDelay = do
                                    _ <- runDB $ replace (toSqlKey submissionID :: Key Submission) $ Submission studentId failed passed total exceptions listName correctDelay
                                    sendResponseStatus status200 $ toJSON rmWorked
                             sendResponseStatus status200 $ toJSON rmWorked
-                        _ -> 
+                        _ ->
                           sendResponseStatus status400 $ toJSON rmUploadProblems
 
 
