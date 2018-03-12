@@ -14,6 +14,7 @@ import Import
 import Handler.ExcelDate
 import Database.Persist.Sql  (SqlPersistM, runSqlPersistMPool, rawExecute, rawSql, unSingle, connEscapeName, unSqlBackendKey, toSqlKey)
 
+-- This ID is the value between the "/d/" and the "/edit" in the URL of your spreadsheet.
 sheetId :: String
 sheetId = "1s7DYZ2EmIL8gXIABRighKC8PHEjckMY1YONrN9eW-Pc"
 

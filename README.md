@@ -41,3 +41,15 @@ stack test --flag functional-project:library-only --flag functional-project:dev
 * There are several chatrooms you can ask for help:
 	* For IRC, try Freenode#yesod and Freenode#haskell
 	* [Functional Programming Slack](https://fpchat-invite.herokuapp.com/), in the #haskell, #haskell-beginners, or #yesod channels.
+
+## Turn on the Google Sheets API
+
+* Use [this wizard](https://console.developers.google.com/start/api?id=sheets.googleapis.com&hl=pt-br) to create or select a project in the Google Developers Console and automatically turn on the API. Click `Continue`, then `Go to credentials`.
+* On the `Add credentials to your project` page, click the `Cancel` button.
+* At the top of the page, select the `OAuth consent screen` tab. Select an `Email address`, enter a `Product name` if not already set, and click the `Save` button.
+* Select the `Credentials` tab, click the `Create credentials` button and select `OAuth client ID`.
+* Select the application type `Other`, enter the name "NAME OF YOUR APPLICATION", and click the `Create` button.
+* Click the `(Download JSON)` button to the right of the client ID.
+* Move this file to the directory `~/.config/gcloud/` and rename it `application_default_credentials.json`.
+* You must also share with your service the spreadsheet that you want to get the info of.
+* In order to do this you must share the sheet with the email address of your service which is in your downloaded service config file.
